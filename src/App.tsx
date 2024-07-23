@@ -1,14 +1,9 @@
-import { useState, useCallback } from "react";
-import {
-  DragDropContext,
-  Droppable,
-  Draggable,
-  DropResult,
-} from "react-beautiful-dnd";
+import { useState, useCallback } from 'react'
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd'
 
 interface Item {
-  id: string;
-  content: string;
+  id: string
+  content: string
 }
 
 export default function App() {
@@ -16,37 +11,29 @@ export default function App() {
     Array.from({ length: count }, (v, k) => k).map((k) => ({
       id: `item-${k}`,
       content: `item ${k}`,
-    }));
+    }))
 
-  const [items, setItems] = useState<Item[]>(getItems(10));
+  const [items, setItems] = useState<Item[]>(getItems(10))
 
-  const reorder = (
-    list: Item[],
-    startIndex: number,
-    endIndex: number
-  ): Item[] => {
-    const result = Array.from(list);
-    const [removed] = result.splice(startIndex, 1);
-    result.splice(endIndex, 0, removed);
-    return result;
-  };
+  const reorder = (list: Item[], startIndex: number, endIndex: number): Item[] => {
+    const result = Array.from(list)
+    const [removed] = result.splice(startIndex, 1)
+    result.splice(endIndex, 0, removed)
+    return result
+  }
 
   const onDragEnd = useCallback(
     (result: DropResult) => {
       if (!result.destination) {
-        return;
+        return
       }
 
-      const newItems = reorder(
-        items,
-        result.source.index,
-        result.destination.index
-      );
+      const newItems = reorder(items, result.source.index, result.destination.index)
 
-      setItems(newItems);
+      setItems(newItems)
     },
-    [items]
-  );
+    [items],
+  )
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
@@ -55,9 +42,7 @@ export default function App() {
           <div
             {...provided.droppableProps}
             ref={provided.innerRef}
-            className={`p-2 w-64 ${
-              snapshot.isDraggingOver ? "bg-blue-100" : "bg-gray-100"
-            }`}
+            className={`w-64 p-2 ${snapshot.isDraggingOver ? 'bg-blue-100' : 'bg-gray-100'}`}
           >
             {items.map((item, index) => (
               <Draggable key={item.id} draggableId={item.id} index={index}>
@@ -67,8 +52,8 @@ export default function App() {
                     {...provided.draggableProps}
                     {...provided.dragHandleProps}
                     className={`
-                        select-none p-4 mb-2 
-                        ${snapshot.isDragging ? "bg-green-200" : "bg-gray-300"}
+                        mb-2 select-none p-4 
+                        ${snapshot.isDragging ? 'bg-green-200' : 'bg-gray-300'}
                       `}
                   >
                     {item.content}
@@ -81,5 +66,5 @@ export default function App() {
         )}
       </Droppable>
     </DragDropContext>
-  );
+  )
 }

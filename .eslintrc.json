@@ -1,0 +1,17 @@
+{
+  "extends": [
+    "plugin:@typescript-eslint/recommended-type-checked",
+    "prettier",
+    "plugin:tailwindcss/recommended"
+  ],
+  "plugins": ["@typescript-eslint"],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "project": true,
+    "tsconfigRootDir": "./"
+  },
+  "rules": {
+    "no-console": ["error", { "allow": ["error"] }]
+  },
+  "root": true
+}
