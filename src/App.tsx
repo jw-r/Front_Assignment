@@ -1,17 +1,30 @@
-import React, { useState, useCallback } from "react";
-import ReactDOM from "react-dom";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import { useState, useCallback } from "react";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+} from "react-beautiful-dnd";
 
-function App() {
-  const getItems = (count) =>
+interface Item {
+  id: string;
+  content: string;
+}
+
+export default function App() {
+  const getItems = (count: number): Item[] =>
     Array.from({ length: count }, (v, k) => k).map((k) => ({
       id: `item-${k}`,
       content: `item ${k}`,
     }));
 
-  const [items, setItems] = useState(getItems(10));
+  const [items, setItems] = useState<Item[]>(getItems(10));
 
-  const reorder = (list, startIndex, endIndex) => {
+  const reorder = (
+    list: Item[],
+    startIndex: number,
+    endIndex: number
+  ): Item[] => {
     const result = Array.from(list);
     const [removed] = result.splice(startIndex, 1);
     result.splice(endIndex, 0, removed);
@@ -19,7 +32,7 @@ function App() {
   };
 
   const onDragEnd = useCallback(
-    (result) => {
+    (result: DropResult) => {
       if (!result.destination) {
         return;
       }
@@ -42,7 +55,9 @@ function App() {
           <div
             {...provided.droppableProps}
             ref={provided.innerRef}
-            style={getListStyle(snapshot.isDraggingOver)}
+            className={`p-2 w-64 ${
+              snapshot.isDraggingOver ? "bg-blue-100" : "bg-gray-100"
+            }`}
           >
             {items.map((item, index) => (
               <Draggable key={item.id} draggableId={item.id} index={index}>
@@ -51,10 +66,10 @@ function App() {
                     ref={provided.innerRef}
                     {...provided.draggableProps}
                     {...provided.dragHandleProps}
-                    style={getItemStyle(
-                      snapshot.isDragging,
-                      provided.draggableProps.style
-                    )}
+                    className={`
+                        select-none p-4 mb-2 
+                        ${snapshot.isDragging ? "bg-green-200" : "bg-gray-300"}
+                      `}
                   >
                     {item.content}
                   </div>
@@ -68,21 +83,3 @@ function App() {
     </DragDropContext>
   );
 }
-
-const GRID = 8;
-
-const getItemStyle = (isDragging, draggableStyle) => ({
-  userSelect: "none",
-  padding: GRID * 2,
-  margin: `0 0 ${GRID}px 0`,
-  background: isDragging ? "lightgreen" : "grey",
-  ...draggableStyle,
-});
-
-const getListStyle = (isDraggingOver) => ({
-  background: isDraggingOver ? "lightblue" : "lightgrey",
-  padding: GRID,
-  width: 250,
-});
-
-ReactDOM.render(<App />, document.getElementById("root"));
