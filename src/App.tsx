@@ -3,6 +3,7 @@ import {
   DragDropContext,
   Draggable,
   DraggableLocation,
+  DragUpdate,
   Droppable,
   DropResult,
 } from 'react-beautiful-dnd'
@@ -11,6 +12,7 @@ import { BOARDS } from './constants/dragDrop'
 interface Item {
   id: string
   content: string
+  isEven: boolean
 }
 
 interface Board {
@@ -23,6 +25,8 @@ export default function App() {
   const [boards, setBoards] = useState<Board[]>(() =>
     BOARDS.map((board) => ({ ...board, items: getItems(board.name, 10) })),
   )
+
+  const [invalidMove, setInvalidMove] = useState<string | null>(null)
 
   const reorderItems = (list: Item[], startIndex: number, endIndex: number): Item[] => {
     const result = Array.from(list)
@@ -46,8 +50,67 @@ export default function App() {
     return [sourceClone, destClone]
   }
 
-  const onDragEnd = ({ source, destination }: DropResult) => {
+  const isMovementAllowed = (
+    source: DraggableLocation,
+    destination: DraggableLocation,
+    draggableId: string,
+  ) => {
+    // 첫 번째 board에서 세 번째 board로 이동 불가
+    if (source.droppableId === BOARDS[0].id && destination.droppableId === BOARDS[2].id) {
+      return false
+    }
+
+    const sourceBoard = boards.find((board) => board.id === source.droppableId)!
+    const destBoard = boards.find((board) => board.id === destination.droppableId)!
+    const draggedItem = sourceBoard.items.find((item) => item.id === draggableId)!
+
+    // 짝수 아이템은 다른 짝수 아이템 앞으로 이동 불가
+    if (draggedItem.isEven) {
+      const destIndex = destination.index
+      if (destIndex > 0) {
+        const itemBefore = destBoard.items[destIndex - 1]
+        if (itemBefore.isEven) {
+          return false
+        }
+      }
+    }
+
+    return true
+  }
+
+  const onDragUpdate = (update: DragUpdate) => {
+    if (!update.destination) {
+      setInvalidMove(null)
+      return
+    }
+
+    const sourceBoard = boards.find((board) => board.id === update.source.droppableId)!
+    const destBoard = boards.find((board) => board.id === update.destination?.droppableId)!
+    const draggedItem = sourceBoard.items.find((item) => item.id === update.draggableId)!
+
+    if (
+      update.source.droppableId === BOARDS[0].id &&
+      update.destination.droppableId === BOARDS[2].id
+    ) {
+      setInvalidMove(update.draggableId)
+    } else if (draggedItem.isEven && update.destination.index > 0) {
+      const itemBefore = destBoard.items[update.destination.index - 1]
+      if (itemBefore.isEven) {
+        setInvalidMove(update.draggableId)
+      } else {
+        setInvalidMove(null)
+      }
+    } else {
+      setInvalidMove(null)
+    }
+  }
+
+  const onDragEnd = ({ source, destination, draggableId }: DropResult) => {
     if (!destination) {
+      return
+    }
+
+    if (!isMovementAllowed(source, destination, draggableId)) {
       return
     }
 
@@ -84,7 +147,7 @@ export default function App() {
   }
 
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
+    <DragDropContext onDragEnd={onDragEnd} onDragUpdate={onDragUpdate}>
       <div className="mx-auto flex w-fit py-[5vh]">
         {boards.map((board) => (
           <Droppable key={board.id} droppableId={board.id}>
@@ -104,8 +167,14 @@ export default function App() {
                           {...provided.draggableProps}
                           {...provided.dragHandleProps}
                           className={`mb-2 select-none p-4
-                          ${snapshot.isDragging ? 'bg-green-200' : 'bg-gray-300'}
-                          `}
+                          ${
+                            snapshot.isDragging
+                              ? invalidMove === item.id
+                                ? 'bg-red-500'
+                                : 'bg-green-200'
+                              : 'bg-gray-300'
+                          }
+                        `}
                         >
                           {item.content}
                         </div>
@@ -126,4 +195,5 @@ const getItems = (prefix: string, count: number): Item[] =>
   Array.from({ length: count }, (_, k) => ({
     id: `${prefix}-item-${k + 1}`,
     content: `${prefix} item ${k + 1}`,
+    isEven: (k + 1) % 2 === 0,
   }))
