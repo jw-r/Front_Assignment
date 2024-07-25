@@ -129,7 +129,9 @@ export default function App() {
       if (sourceBoard.id === BOARDS[0].id && destinationBoard.id === BOARDS[2].id) {
         return {
           isAllowed: false,
-          invalidItemIds: movedItems.map((item) => item.id),
+          invalidItemIds: movedItems
+            .filter((item) => sourceBoard.items.map((item) => item.id).includes(item.id))
+            .map((item) => item.id),
           errorMessage: 'A Board에서 C Board로는 이동할 수 없습니다.',
         }
       }
