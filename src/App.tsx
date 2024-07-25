@@ -81,27 +81,30 @@ export default function App() {
     if (!destination) return
 
     const itemIdsToMove = selectedItemIds.length > 0 ? selectedItemIds : [result.draggableId]
-
     const validationResult = validateMovement(source, destination, itemIdsToMove)
     if (!validationResult.isAllowed) return
 
     const updatedBoards = [...boards]
-    const sourceBoard = updatedBoards.find((board) => board.id === source.droppableId)!
+    const sourceBoards = updatedBoards.filter((board) =>
+      board.items.some((item) => itemIdsToMove.includes(item.id)),
+    )
     const destinationBoard = updatedBoards.find((board) => board.id === destination.droppableId)!
 
-    const itemsToMove = sourceBoard.items
-      .filter((item) => itemIdsToMove.includes(item.id))
-      .sort((a, b) => sourceBoard.items.indexOf(a) - sourceBoard.items.indexOf(b))
+    sourceBoards.forEach((sourceBoard) => {
+      const itemsToMove = sourceBoard.items
+        .filter((item) => itemIdsToMove.includes(item.id))
+        .sort((a, b) => sourceBoard.items.indexOf(a) - sourceBoard.items.indexOf(b))
 
-    sourceBoard.items = sourceBoard.items.filter((item) => !itemIdsToMove.includes(item.id))
+      sourceBoard.items = sourceBoard.items.filter((item) => !itemIdsToMove.includes(item.id))
 
-    const isSameBoard = source.droppableId === destination.droppableId
-    const insertIndex =
-      isSameBoard && destination.index > source.index
-        ? destination.index - itemsToMove.length + 1
-        : destination.index
+      const isSameBoard = source.droppableId === destination.droppableId
+      const insertIndex =
+        isSameBoard && destination.index > source.index
+          ? destination.index - itemsToMove.length + 1
+          : destination.index
 
-    destinationBoard.items.splice(insertIndex, 0, ...itemsToMove)
+      destinationBoard.items.splice(insertIndex, 0, ...itemsToMove)
+    })
 
     setBoards(updatedBoards)
     setSelectedItemIds([])
@@ -112,47 +115,57 @@ export default function App() {
     destination: DraggableLocation,
     itemIds: string[],
   ): MovementValidation => {
-    const sourceBoard = boards.find((board) => board.id === source.droppableId)!
+    const sourceBoards = boards.filter((board) =>
+      board.items.some((item) => selectedItemIds.includes(item.id)),
+    )
+
     const destinationBoard = boards.find((board) => board.id === destination.droppableId)!
-    const movedItems = boards
-      .flatMap((board) => board.items)
-      .filter((item) => itemIds.includes(item.id))
 
-    if (sourceBoard.id === BOARDS[0].id && destinationBoard.id === BOARDS[2].id) {
-      return {
-        isAllowed: false,
-        invalidItemIds: movedItems.map((item) => item.id),
-        errorMessage: 'A Board에서 C Board로는 이동할 수 없습니다.',
-      }
-    }
+    for (const sourceBoard of sourceBoards) {
+      const movedItems = boards
+        .flatMap((board) => board.items)
+        .filter((item) => itemIds.includes(item.id))
 
-    const destinationItems = [...destinationBoard.items]
-    if (sourceBoard.id === destinationBoard.id) {
-      movedItems.forEach((item) => {
-        const index = destinationItems.findIndex((i) => i.id === item.id)
-        if (index !== -1) destinationItems.splice(index, 1)
-      })
-    }
-
-    const updatedDestinationItems = [...destinationItems]
-    updatedDestinationItems.splice(destination.index, 0, ...movedItems)
-
-    const invalidEvenItemIds = movedItems
-      .filter((item) => {
-        if (item.isEven) {
-          const prevItemIndex = destination.index + movedItems.indexOf(item) - 1
-          const prevItem = prevItemIndex >= 0 ? updatedDestinationItems[prevItemIndex] : null
-          return prevItem && prevItem.isEven && !movedItems.includes(prevItem)
+      if (sourceBoard.id === BOARDS[0].id && destinationBoard.id === BOARDS[2].id) {
+        return {
+          isAllowed: false,
+          invalidItemIds: movedItems.map((item) => item.id),
+          errorMessage: 'A Board에서 C Board로는 이동할 수 없습니다.',
         }
-        return false
-      })
-      .map((item) => item.id)
+      }
 
-    if (invalidEvenItemIds.length > 0) {
-      return {
-        isAllowed: false,
-        invalidItemIds: invalidEvenItemIds,
-        errorMessage: '짝수 번호의 아이템을 다른 짝수 번호 아이템의 앞으로 이동시킬 수 없습니다.',
+      const destinationItems = [...destinationBoard.items]
+      if (sourceBoard.id === destinationBoard.id) {
+        movedItems.forEach((item) => {
+          const index = destinationItems.findIndex((i) => i.id === item.id)
+          if (index !== -1) destinationItems.splice(index, 1)
+        })
+      }
+
+      const updatedDestinationItems = [...destinationItems]
+      const adjustedIndex = destination.index
+      itemIds.forEach((itemId, i) => {
+        const item = movedItems.find((item) => item.id === itemId)
+        updatedDestinationItems.splice(adjustedIndex + i, 0, item!)
+      })
+
+      const invalidEvenItemIds = movedItems
+        .filter((item) => {
+          if (item.isEven) {
+            const prevItemIndex = destination.index + movedItems.indexOf(item) - 1
+            const prevItem = prevItemIndex >= 0 ? updatedDestinationItems[prevItemIndex] : null
+            return prevItem && prevItem.isEven && !movedItems.includes(prevItem)
+          }
+          return false
+        })
+        .map((item) => item.id)
+
+      if (invalidEvenItemIds.length > 0) {
+        return {
+          isAllowed: false,
+          invalidItemIds: invalidEvenItemIds,
+          errorMessage: '짝수 번호의 아이템을 다른 짝수 번호 아이템의 앞으로 이동시킬 수 없습니다.',
+        }
       }
     }
 
