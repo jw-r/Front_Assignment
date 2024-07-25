@@ -11,6 +11,7 @@ import {
   DragUpdate,
 } from 'react-beautiful-dnd'
 import { BOARDS } from './constants/dragDrop'
+import { cn } from './lib/utils'
 
 interface Item {
   id: string
@@ -97,7 +98,7 @@ export default function App() {
     const isSameBoard = source.droppableId === destination.droppableId
     const insertIndex =
       isSameBoard && destination.index > source.index
-        ? destination.index - itemsToMove.length
+        ? destination.index - itemsToMove.length + 1
         : destination.index
 
     destinationBoard.items.splice(insertIndex, 0, ...itemsToMove)
@@ -179,9 +180,10 @@ export default function App() {
     >
       {(isDragging || selectedItemIds.length > 0) && (
         <div
-          className={`fixed top-0 w-full p-2 text-center text-white ${
-            errorMessage ? 'bg-red-500' : 'bg-blue-500'
-          }`}
+          className={cn(
+            'fixed top-0 z-10 w-full p-3 text-center text-white',
+            errorMessage ? 'bg-red-500' : 'bg-blue-500',
+          )}
         >
           {isDragging ? (
             <>
@@ -193,59 +195,62 @@ export default function App() {
           ) : null}
         </div>
       )}
-      <div className="mx-auto flex w-fit py-[5vh]">
-        {boards.map((board) => (
-          <Droppable key={board.id} droppableId={board.id}>
-            {(provided: DroppableProvided, snapshot) => (
-              <div
-                {...provided.droppableProps}
-                ref={provided.innerRef}
-                className={`m-2 w-64 p-2 ${
-                  snapshot.isDraggingOver ? 'bg-blue-100' : 'bg-gray-100'
-                }`}
-              >
-                <h2 className="mb-2 text-center text-lg font-bold">{board.name} Board</h2>
-                <div className="min-h-[100px]">
-                  {board.items.map((item, index) => (
-                    <Draggable key={item.id} draggableId={item.id} index={index}>
-                      {(provided: DraggableProvided, snapshot) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                          onClick={() => handleItemClick(item.id)}
-                          className={`mb-2 flex cursor-pointer select-none items-center justify-between p-4
-          ${selectedItemIds.includes(item.id) ? 'bg-blue-200' : 'bg-gray-300'}
-          ${
-            (snapshot.isDragging || selectedItemIds.includes(item.id)) &&
-            invalidItemIds.includes(item.id)
-              ? 'bg-red-500'
-              : ''
-          }
-          ${
-            (snapshot.isDragging || selectedItemIds.includes(item.id)) &&
-            !invalidItemIds.includes(item.id)
-              ? 'opacity-50'
-              : ''
-          }
-        `}
-                        >
-                          <span>{item.content}</span>
-                          {selectedItemIds.includes(item.id) && (
-                            <span className="ml-2 flex size-6 items-center justify-center rounded-full bg-blue-500 text-sm text-white">
-                              {selectedItemIds.indexOf(item.id) + 1}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="flex max-sm:flex-col max-sm:space-y-6 sm:space-x-6">
+          {boards.map((board) => (
+            <Droppable key={board.id} droppableId={board.id}>
+              {(provided: DroppableProvided, snapshot) => (
+                <div
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                  className={cn(
+                    'flex-1 rounded-lg p-4 shadow-md transition-colors duration-200',
+                    snapshot.isDraggingOver ? 'bg-blue-50' : 'bg-white',
+                  )}
+                >
+                  <h2 className="mb-4 text-center text-xl font-bold text-gray-800">
+                    {board.name} Board
+                  </h2>
+                  <div className="space-y-3">
+                    {board.items.map((item, index) => (
+                      <Draggable key={item.id} draggableId={item.id} index={index}>
+                        {(provided: DraggableProvided, snapshot) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            onClick={() => handleItemClick(item.id)}
+                            className={cn(
+                              'flex cursor-pointer select-none items-center justify-between rounded-md p-3 shadow',
+                              selectedItemIds.includes(item.id) ? 'bg-blue-100' : 'bg-gray-50',
+                              {
+                                'bg-red-100':
+                                  (snapshot.isDragging || selectedItemIds.includes(item.id)) &&
+                                  invalidItemIds.includes(item.id),
+                                'opacity-75':
+                                  (snapshot.isDragging || selectedItemIds.includes(item.id)) &&
+                                  !invalidItemIds.includes(item.id),
+                                'shadow-lg': snapshot.isDragging,
+                              },
+                            )}
+                          >
+                            <span className="text-gray-800">{item.content}</span>
+                            {selectedItemIds.includes(item.id) && (
+                              <span className="ml-2 flex size-6 items-center justify-center rounded-full bg-blue-500 text-sm font-medium text-white">
+                                {selectedItemIds.indexOf(item.id) + 1}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </div>
                 </div>
-              </div>
-            )}
-          </Droppable>
-        ))}
+              )}
+            </Droppable>
+          ))}
+        </div>
       </div>
     </DragDropContext>
   )
