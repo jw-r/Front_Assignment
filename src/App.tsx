@@ -12,18 +12,7 @@ import DragStatusBar from './components/DragStatusBar'
 import Layout from './components/Layout'
 import Board from './components/Board'
 import Item from './components/Item'
-
-interface IItem {
-  id: string
-  content: string
-  isEven: boolean
-}
-
-interface IBoard {
-  id: string
-  name: string
-  items: IItem[]
-}
+import { IBoard, IItem } from './types'
 
 export default function App() {
   const {
