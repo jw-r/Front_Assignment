@@ -128,27 +128,28 @@ export default function useDND<T extends { id: string; items: { id: string }[] }
         }
 
         const updatedBoards = [...prevState.boards]
-        const sourceBoards = updatedBoards.filter((board) =>
-          board.items.some((item) => itemIdsToMove.includes(item.id)),
-        )
-        const destinationBoard = updatedBoards.find(
-          (board) => board.id === destination.droppableId,
-        )!
+        const sourceBoards = utils.getBoardsWithSelectedItems(updatedBoards, itemIdsToMove)
+        const destinationBoard = utils.getDestinationBoard(updatedBoards, destination.droppableId)
+
+        if (!destinationBoard) {
+          return {
+            ...prevState,
+            isDragging: false,
+            invalidItemIds: [],
+            errorMessage: '목적지 보드를 찾을 수 없습니다.',
+          }
+        }
 
         sourceBoards.forEach((sourceBoard) => {
-          const itemsToMove = sourceBoard.items
-            .filter((item) => itemIdsToMove.includes(item.id))
-            .sort((a, b) => sourceBoard.items.indexOf(a) - sourceBoard.items.indexOf(b))
+          const updatedDestinationItems = utils.getUpdatedDestinationItems(
+            sourceBoard,
+            destinationBoard,
+            itemIdsToMove,
+            destination.index,
+          )
 
           sourceBoard.items = sourceBoard.items.filter((item) => !itemIdsToMove.includes(item.id))
-
-          const isSameBoard = source.droppableId === destination.droppableId
-          const insertIndex =
-            isSameBoard && destination.index > source.index
-              ? destination.index - itemsToMove.length + 1
-              : destination.index
-
-          destinationBoard.items.splice(insertIndex, 0, ...itemsToMove)
+          destinationBoard.items = updatedDestinationItems
         })
 
         return {
@@ -161,7 +162,7 @@ export default function useDND<T extends { id: string; items: { id: string }[] }
         }
       })
     },
-    [validateMovement],
+    [validateMovement, utils],
   )
 
   const handleItemClick = useCallback((itemId: string) => {
